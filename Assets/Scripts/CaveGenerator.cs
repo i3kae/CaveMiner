@@ -28,18 +28,23 @@ public class CaveGenerator : MonoBehaviour
 
     private bool checker = true;
 
+    private void Awake()
+    {
+        GenerateMap();
+    }
+
     private void Update()
     {
         // if (checker && Input.GetMouseButtonDown(0)) GenerateMap();
-        if (Input.GetMouseButtonDown(0)) GenerateMap();
+        // if (Input.GetMouseButtonDown(0)) GenerateMap();
     }
 
     private void GenerateMap()
     {
         checker = false;
         map = new int[width, height];
-        MapRandomFill();
 
+        MapRandomFill();
         for (int i = 0; i < smoothNum; i++) SmoothMap();
         for (int i = 0; i < expandRoadNum; i++) ExpandMap(ROAD);
         for (int i = 0; i < smoothNum; i++) SmoothMap();
