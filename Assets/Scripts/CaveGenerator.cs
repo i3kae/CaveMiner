@@ -127,23 +127,29 @@ public class CaveGenerator : MonoBehaviour
     private void GenerateEntrance()
     {
         // 차후 4 방면 중 한 곳에서 생성되도록 수정
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        GameObject camera = GameObject.FindGameObjectWithTag("MainCamera");
         int entranceX, entranceY = 0;
-        entranceX = pseudoRandom.Next(portalDistance, width - portalDistance);
+        entranceX = pseudoRandom.Next(portalDistance + 2, width - portalDistance - 2);
         for (int i = entranceX - portalDistance; i <= entranceX + portalDistance; i++)
         {
             map[i, entranceY] = PORTAL;
         }
-        
-        for (int x = entranceX, y = entranceY; map[x, y] != ROAD;)
+
+        int x, y;
+        for (x = entranceX, y = entranceY; map[x, y] != ROAD || (y - entranceY) < 10;)
         {
             for (int i = -portalDistance - 1; i <= portalDistance + 1; i++)
             {
-                if (map[x + i, y] == PORTAL) continue;
+                if (map[x, y] == PORTAL) break;
                 if (1 <= x + i && x + i < width - 1) map[x + i, y] = ROAD;
             }
             y++;
             x += pseudoRandom.Next(-1, 2);
         }
+        Vector3 playerPosition = new Vector3(-width / 2 + entranceX, -height / 2 + (entranceY + 5), 0);
+        player.GetComponent<PlayerController>().SetPosition(playerPosition);
+        camera.GetComponent<CameraController>().SetPosition(playerPosition);
     }
 
     private void FillMap()
@@ -220,6 +226,7 @@ public class CaveGenerator : MonoBehaviour
             {
                 if (neighbourX >= 0 && neighbourX < width && neighbourY >= 0 && neighbourY < height)
                 { //맵 범위를 초과하지 않게 조건문으로 검사
+                    if (map[neighbourX, neighbourY] == PORTAL) continue; 
                     if (neighbourX != gridX || neighbourY != gridY) wallCount += map[neighbourX, neighbourY]; //벽은 1이고 빈 공간은 0이므로 벽일 경우 wallCount 증가
                 }
                 else wallCount++; //주변 타일이 맵 범위를 벗어날 경우 wallCount 증가

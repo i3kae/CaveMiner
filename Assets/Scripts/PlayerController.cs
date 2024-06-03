@@ -40,8 +40,8 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void changePosition(Vector2 pos)
+    public void SetPosition(Vector3 pos)
     {
-
+        transform.position = pos;
     }
 }

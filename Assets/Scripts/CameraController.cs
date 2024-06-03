@@ -13,4 +13,10 @@ public class CameraController : MonoBehaviour
         Vector3 moveVector = new Vector3(dir.x * cameraSpeed * Time.deltaTime, dir.y * cameraSpeed * Time.deltaTime, 0.0f);
         this.transform.Translate(moveVector);
     }
+
+    public void SetPosition(Vector3 pos)
+    {
+        pos.z = -12f;
+        transform.position = pos;
+    }
 }
