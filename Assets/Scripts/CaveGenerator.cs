@@ -1,47 +1,39 @@
+using System;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using static UnityEditor.PlayerSettings;
 
 public class CaveGenerator : MonoBehaviour
 {
     [SerializeField] private int width;
     [SerializeField] private int height;
 
-    [SerializeField] private string seed;
-    [SerializeField] private bool useRandomSeed;
-
     [Range(0, 100)]
     [SerializeField] private int randomFillPercent;
+    [SerializeField] private string seed;
+    [SerializeField] private bool useRandomSeed;
     [SerializeField] private int smoothNum;
     [SerializeField] private int expandRoadNum;
     [SerializeField] private int expandWallNum;
 
+    [SerializeField] private Tile wallTile;
+    [SerializeField] private Tile roadTile;
+    [SerializeField] private Tilemap wallTilemap;
+    [SerializeField] private Tilemap roadTilemap;
+
     private int[,] map;
     private const int ROAD = 0;
     private const int WALL = 1;
-
-    [SerializeField] private Tilemap wallTilemap;
-    [SerializeField] private Tilemap roadTilemap;
-    [SerializeField] private Tile wallTile;
-    [SerializeField] private Tile roadTile;
-    [SerializeField] private Color[] colors;
-
-    private bool checker = true;
+    private System.Random pseudoRandom;
 
     private void Awake()
     {
+        if (useRandomSeed) seed = DateTime.Now.Ticks.ToString(); //시드
+        pseudoRandom = new System.Random(seed.GetHashCode());
         GenerateMap();
-    }
-
-    private void Update()
-    {
-        // if (checker && Input.GetMouseButtonDown(0)) GenerateMap();
-        // if (Input.GetMouseButtonDown(0)) GenerateMap();
     }
 
     private void GenerateMap()
     {
-        checker = false;
         map = new int[width, height];
 
         MapRandomFill();
@@ -50,37 +42,36 @@ public class CaveGenerator : MonoBehaviour
         for (int i = 0; i < smoothNum; i++) SmoothMap();
         for (int i = 0; i < expandWallNum; i++) ExpandMap(WALL);
         for (int i = 0; i < smoothNum; i++) SmoothMap();
+
         FillMap();
     }
-    
+    private void GenerateEntrance()
+    {
+        int entranceX, entranceY = height;
+        // int entranceX, entranceY; 차후 4 방면 중 한 곳에서 생성되도록 수정
+        entranceX = pseudoRandom.Next(6, width - 6);
+        
+    }
     private void FillMap()
     {
         for (int x = 0; x < width; x++)
             for (int y = 0; y < height; y++)
                 OnDrawTile(x, y);
     }
-    private void MapRandomFill() //맵을 비율에 따라 벽 혹은 빈 공간으로 랜덤하게 채우는 메소드
+    private void MapRandomFill()
     {
-        if (useRandomSeed) seed = Time.time.ToString(); //시드
-
-        System.Random pseudoRandom = new System.Random(seed.GetHashCode()); //시드로 부터 의사 난수 생성
-
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
-                if (x == 0 || x == width - 1 || y == 0 || y == height - 1) map[x, y] = WALL; //가장자리는 벽으로 채움
-                else map[x, y] = (pseudoRandom.Next(0, 100) < randomFillPercent) ? WALL : ROAD; //비율에 따라 벽 혹은 빈 공간 생성
+                if (x == 0 || x == width - 1 || y == 0 || y == height - 1) map[x, y] = WALL;
+                else map[x, y] = (pseudoRandom.Next(0, 100) < randomFillPercent) ? WALL : ROAD;
             }
         }
     }
 
     private void ExpandMap(int OBJ)
     {
-        if (useRandomSeed) seed = Time.time.ToString(); //시드
-
-        System.Random pseudoRandom = new System.Random(seed.GetHashCode()); //시드로 부터 의사 난수 생성
-
         int[,] expandPath = {
             {-1, 0 }, {1, 0 },
             {0, -1 }, {0, 1 }
@@ -111,7 +102,7 @@ public class CaveGenerator : MonoBehaviour
     }
 
     private void SmoothMap()
-    {
+    { 
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
