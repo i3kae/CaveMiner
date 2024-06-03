@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using UnityEditor.Search;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -14,15 +16,20 @@ public class CaveGenerator : MonoBehaviour
     [SerializeField] private int smoothNum;
     [SerializeField] private int expandRoadNum;
     [SerializeField] private int expandWallNum;
+    [SerializeField] private int portalDistance;
+
 
     [SerializeField] private Tile wallTile;
     [SerializeField] private Tile roadTile;
+    [SerializeField] private Tile portalTile;
     [SerializeField] private Tilemap wallTilemap;
     [SerializeField] private Tilemap roadTilemap;
+    [SerializeField] private Tilemap portalTilemap;
 
     private int[,] map;
     private const int ROAD = 0;
     private const int WALL = 1;
+    private const int PORTAL = 2;
     private System.Random pseudoRandom;
 
     private void Awake()
@@ -36,22 +43,109 @@ public class CaveGenerator : MonoBehaviour
     {
         map = new int[width, height];
 
-        MapRandomFill();
+        do
+        {
+            MapRandomFill();
+            for (int i = 0; i < smoothNum; i++) SmoothMap();
+            for (int i = 0; i < expandRoadNum; i++) ExpandMap(ROAD);
+            for (int i = 0; i < smoothNum; i++) SmoothMap();
+            for (int i = 0; i < expandWallNum; i++) ExpandMap(WALL);
+            for (int i = 0; i < smoothNum; i++) SmoothMap();
+        } while (!IsValidMap());
+        GenerateEntrance();
         for (int i = 0; i < smoothNum; i++) SmoothMap();
-        for (int i = 0; i < expandRoadNum; i++) ExpandMap(ROAD);
-        for (int i = 0; i < smoothNum; i++) SmoothMap();
-        for (int i = 0; i < expandWallNum; i++) ExpandMap(WALL);
-        for (int i = 0; i < smoothNum; i++) SmoothMap();
-
         FillMap();
+    }
+    public class pair
+    {
+        public int first { get; set; }
+        public int second { get; set; }
+
+        public pair(int first, int second)
+        {
+            this.first = first;
+            this.second = second;
+        }
+    }
+    private bool IsValidMap()
+    {
+        int[,] mover = {
+            {-1, 0 }, {1, 0 },
+            {0, -1 }, {0, 1 }
+        };
+        int[,] checker = new int[width, height];
+        int maxMapCnt = 0, maxMapValue = 0;
+        int nowValue = 1;
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                if (map[x, y] == ROAD && checker[x, y] == 0)
+                {
+                    int cnt = 0;
+                    Queue<pair> q = new Queue<pair>();
+                    q.Enqueue(new pair(x, y));
+                    for (; q.Count > 0; cnt++)
+                    {
+                        pair nowPos = q.Dequeue();
+                        checker[nowPos.first, nowPos.second] = nowValue;
+                        for (int i = 0; i < 4; i++)
+                        {
+                            int nextX = nowPos.first + mover[i, 0], nextY = nowPos.second + mover[i, 1];
+                            if (map[nextX, nextY] == ROAD && checker[nextX, nextY] == 0)
+                            {
+                                checker[nextX, nextY] = nowValue;
+                                q.Enqueue(new pair(nextX, nextY));
+                            }
+                        }
+                    }
+                    if (cnt > maxMapCnt)
+                    {
+                        maxMapCnt = cnt;
+                        maxMapValue = nowValue;
+                    }
+                    nowValue++;
+                }
+            }
+        }
+        if (maxMapCnt >= (width * height) / 4)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    if (map[x, y] == ROAD && checker[x, y] != maxMapValue)
+                    {
+                        map[x, y] = WALL;
+                    }
+                }
+            }
+            return true;
+        }
+        return false;
     }
     private void GenerateEntrance()
     {
-        int entranceX, entranceY = height;
-        // int entranceX, entranceY; 차후 4 방면 중 한 곳에서 생성되도록 수정
-        entranceX = pseudoRandom.Next(6, width - 6);
+        // 차후 4 방면 중 한 곳에서 생성되도록 수정
+        int entranceX, entranceY = 0;
+        entranceX = pseudoRandom.Next(portalDistance, width - portalDistance);
+        for (int i = entranceX - portalDistance; i <= entranceX + portalDistance; i++)
+        {
+            map[i, entranceY] = PORTAL;
+        }
         
+        for (int x = entranceX, y = entranceY; map[x, y] != ROAD;)
+        {
+            for (int i = -portalDistance - 1; i <= portalDistance + 1; i++)
+            {
+                if (map[x + i, y] == PORTAL) continue;
+                if (1 <= x + i && x + i < width - 1) map[x + i, y] = ROAD;
+            }
+            y++;
+            x += pseudoRandom.Next(-1, 2);
+        }
     }
+
     private void FillMap()
     {
         for (int x = 0; x < width; x++)
@@ -64,6 +158,7 @@ public class CaveGenerator : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
+                if (map[x, y] == PORTAL) continue;
                 if (x == 0 || x == width - 1 || y == 0 || y == height - 1) map[x, y] = WALL;
                 else map[x, y] = (pseudoRandom.Next(0, 100) < randomFillPercent) ? WALL : ROAD;
             }
@@ -92,8 +187,9 @@ public class CaveGenerator : MonoBehaviour
                             1 <= nextY && nextY < height - 1 &&
                             !checker[nextX, nextY] && pseudoRandom.Next(0, 2) == 1)
                         {
-                            map[nextX, nextY] = OBJ;
                             checker[nextX, nextY] = true;
+                            if (map[nextX, nextY] == PORTAL) continue;
+                            map[nextX, nextY] = OBJ;
                         }
                     }
                 }
@@ -107,6 +203,7 @@ public class CaveGenerator : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
+                if (map[x, y] == PORTAL) continue;
                 int neighbourWallTiles = GetSurroundingWallCount(x, y);
                 if (neighbourWallTiles > 6) map[x, y] = WALL; //주변 칸 중 벽이 4칸을 초과할 경우 현재 타일을 벽으로 바꿈
                 else if (neighbourWallTiles < 4) map[x, y] = ROAD; //주변 칸 중 벽이 4칸 미만일 경우 현재 타일을 빈 공간으로 바꿈
@@ -136,10 +233,12 @@ public class CaveGenerator : MonoBehaviour
         Vector3Int pos = new Vector3Int(-width / 2 + x, -height / 2 + y, 0);
         roadTilemap.SetTile(pos, null);
         wallTilemap.SetTile(pos, null);
+        portalTilemap.SetTile(pos, null);
         switch (map[x, y])
         {
             case ROAD: roadTilemap.SetTile(pos, roadTile); break;
             case WALL: wallTilemap.SetTile(pos, wallTile); break;
+            case PORTAL: portalTilemap.SetTile(pos, portalTile); break;
         }
     }
 }

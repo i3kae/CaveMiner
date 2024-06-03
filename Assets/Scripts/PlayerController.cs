@@ -9,19 +9,19 @@ public class PlayerController : MonoBehaviour
     private Rigidbody2D rb;
     private Vector2 movement;
 
-    void Start()
+    private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         rb.constraints = RigidbodyConstraints2D.FreezeRotation; // Z축 회전 고정
     }
 
-    void Update()
+    private void Update()
     {
         movement.x = Input.GetAxisRaw("Horizontal");
         movement.y = Input.GetAxisRaw("Vertical");
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
         Vector2 nextPosition = movement * moveSpeed * Time.fixedDeltaTime + rb.position;
         Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -30,5 +30,18 @@ public class PlayerController : MonoBehaviour
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(new Vector3(0, 0, angle));
         rb.MovePosition(nextPosition);
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.CompareTag("Portal"))
+        {
+            collision.GetComponent<LevelObject>().MoveToNextLevel();
+        }
+    }
+
+    public void changePosition(Vector2 pos)
+    {
+
     }
 }

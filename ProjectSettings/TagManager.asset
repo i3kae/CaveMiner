@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Wall
   - Road
+  - Portal
   layers:
   - Default
   - TransparentFX
