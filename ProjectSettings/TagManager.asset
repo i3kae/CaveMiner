@@ -7,6 +7,7 @@ TagManager:
   - Wall
   - Road
   - Portal
+  - PlayerCollider
   layers:
   - Default
   - TransparentFX
@@ -44,9 +45,15 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Wall
+    uniqueID: 3909045435
+    locked: 0
+  - name: Road
+    uniqueID: 991545251
+    locked: 0
+  - name: Portal
+    uniqueID: 1873877677
+    locked: 0
   - name: Player
     uniqueID: 3024968445
-    locked: 0
-  - name: Cave
-    uniqueID: 3909045435
     locked: 0

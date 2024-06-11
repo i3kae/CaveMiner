@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEditor.Search;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using static UnityEngine.RuleTile.TilingRuleOutput;
 
 public class CaveGenerator : MonoBehaviour
 {
@@ -17,7 +18,7 @@ public class CaveGenerator : MonoBehaviour
     [SerializeField] private int expandRoadNum;
     [SerializeField] private int expandWallNum;
     [SerializeField] private int portalDistance;
-
+    [SerializeField] private int mapPadding;
 
     [SerializeField] private Tile wallTile;
     [SerializeField] private Tile roadTile;
@@ -42,7 +43,7 @@ public class CaveGenerator : MonoBehaviour
     private void GenerateMap()
     {
         map = new int[width, height];
-
+        int[] mineralValues = new int[4];
         do
         {
             MapRandomFill();
@@ -130,15 +131,17 @@ public class CaveGenerator : MonoBehaviour
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         GameObject camera = GameObject.FindGameObjectWithTag("MainCamera");
         int entranceX, entranceY = 0;
-        entranceX = pseudoRandom.Next(portalDistance + 2, width - portalDistance - 2);
+        entranceX = pseudoRandom.Next(portalDistance + 3, width - portalDistance - 3);
         for (int i = entranceX - portalDistance; i <= entranceX + portalDistance; i++)
         {
             map[i, entranceY] = PORTAL;
         }
 
+        bool flag = true;
         int x, y;
-        for (x = entranceX, y = entranceY; map[x, y] != ROAD || (y - entranceY) < 10;)
+        for (x = entranceX, y = entranceY; flag || (y - entranceY) < 20;)
         {
+            if (map[x, y] == ROAD) flag = false;
             for (int i = -portalDistance - 1; i <= portalDistance + 1; i++)
             {
                 if (map[x, y] == PORTAL) break;
@@ -154,8 +157,8 @@ public class CaveGenerator : MonoBehaviour
 
     private void FillMap()
     {
-        for (int x = 0; x < width; x++)
-            for (int y = 0; y < height; y++)
+        for (int x = -mapPadding; x < width + mapPadding; x++)
+            for (int y = -mapPadding / 2; y < height + mapPadding / 2; y++)
                 OnDrawTile(x, y);
     }
     private void MapRandomFill()
@@ -211,8 +214,8 @@ public class CaveGenerator : MonoBehaviour
             {
                 if (map[x, y] == PORTAL) continue;
                 int neighbourWallTiles = GetSurroundingWallCount(x, y);
-                if (neighbourWallTiles > 6) map[x, y] = WALL; //주변 칸 중 벽이 4칸을 초과할 경우 현재 타일을 벽으로 바꿈
-                else if (neighbourWallTiles < 4) map[x, y] = ROAD; //주변 칸 중 벽이 4칸 미만일 경우 현재 타일을 빈 공간으로 바꿈
+                if (neighbourWallTiles > 6) map[x, y] = WALL;
+                else if (neighbourWallTiles < 4) map[x, y] = ROAD;
             }
         }
     }
@@ -221,15 +224,15 @@ public class CaveGenerator : MonoBehaviour
     {
         int wallCount = 0;
         for (int neighbourX = gridX - 1; neighbourX <= gridX + 1; neighbourX++)
-        { //현재 좌표를 기준으로 주변 8칸 검사
+        { 
             for (int neighbourY = gridY - 1; neighbourY <= gridY + 1; neighbourY++)
             {
                 if (neighbourX >= 0 && neighbourX < width && neighbourY >= 0 && neighbourY < height)
-                { //맵 범위를 초과하지 않게 조건문으로 검사
+                { 
                     if (map[neighbourX, neighbourY] == PORTAL) continue; 
-                    if (neighbourX != gridX || neighbourY != gridY) wallCount += map[neighbourX, neighbourY]; //벽은 1이고 빈 공간은 0이므로 벽일 경우 wallCount 증가
+                    if (neighbourX != gridX || neighbourY != gridY) wallCount += map[neighbourX, neighbourY]; 
                 }
-                else wallCount++; //주변 타일이 맵 범위를 벗어날 경우 wallCount 증가
+                else wallCount++;
             }
         }
         return wallCount;
@@ -238,9 +241,13 @@ public class CaveGenerator : MonoBehaviour
     private void OnDrawTile(int x, int y)
     {
         Vector3Int pos = new Vector3Int(-width / 2 + x, -height / 2 + y, 0);
-        roadTilemap.SetTile(pos, null);
-        wallTilemap.SetTile(pos, null);
-        portalTilemap.SetTile(pos, null);
+
+        if (!(x >= 0 && x < width && y >= 0 && y < height))
+        {
+            wallTilemap.SetTile(pos, wallTile);
+            return;
+        }
+
         switch (map[x, y])
         {
             case ROAD: roadTilemap.SetTile(pos, roadTile); break;
