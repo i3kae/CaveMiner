@@ -25,7 +25,7 @@ public class MonsterSpawnController : MonoBehaviour
     {
         elapsedTime += Time.deltaTime;
 
-        if (elapsedTime >= spawnInterval && spawnInterval >= 0.00001f)
+        if (elapsedTime >= spawnInterval && spawnInterval >= 0.0001f)
         {
             SpawnPrefab();
             elapsedTime = 0f;

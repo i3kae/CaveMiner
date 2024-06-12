@@ -10,9 +10,11 @@ TagManager:
   - PlayerCollider
   - Minerals
   - Cave
-  - Monster
   - PlayerFlashlight
   - PlayerLight
+  - Sound
+  - Ghost
+  - Crazy
   layers:
   - Default
   - TransparentFX

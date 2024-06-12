@@ -3,31 +3,41 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] private float moveSpeed = 7f; // 플레이어 이동 속도
+    [SerializeField] private float moveSpeed = 7f;
     [SerializeField] private Light2D playerFlashlight;
     [SerializeField] private Light2D playerLight;
     [SerializeField] private DigController digController;
+    [SerializeField] private BaseController baseController;
+    [SerializeField] private AudioSource stepAudio;
     [SerializeField] UIController mineralUI;
 
     private Rigidbody2D rb;
     private Vector2 movement;
-    private static int[] minerals = new int[4];
+    [SerializeField] private int[] minerals = new int[4];
     private bool flashlightPower = true;
     private void Start()
     {
+        baseController = GameObject.FindAnyObjectByType<BaseController>();
         digController = GameObject.FindAnyObjectByType<DigController>();
         mineralUI = GameObject.FindAnyObjectByType<UIController>();
+        stepAudio = GetComponent<AudioSource>();
         rb = GetComponent<Rigidbody2D>();
-        rb.constraints = RigidbodyConstraints2D.FreezeRotation; // Z축 회전 고정
+        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
     }
 
     private void Update()
     {
         movement.x = Input.GetAxisRaw("Horizontal");
         movement.y = Input.GetAxisRaw("Vertical");
+        if (SceneManager.GetActiveScene().name == "Base") return;
+        
+        if (movement.x == 0 && movement.y == 0) stepAudio.Stop();
+        else if (!stepAudio.isPlaying) stepAudio.Play();
+
         if (Input.GetMouseButtonDown(1))
         {
             flashlightPower = !flashlightPower;
@@ -72,7 +82,7 @@ public class PlayerController : MonoBehaviour
         {
             collision.gameObject.GetComponent<LevelObject>().MoveToNextLevel();
         }
-        if (collision.gameObject.CompareTag("Monster"))
+        if (collision.gameObject.CompareTag("Ghost") || collision.gameObject.CompareTag("Crazy"))
         {
             for (int i = 0; i < 4; i++) minerals[i] = 0;
             collision.gameObject.GetComponent<LevelObject>().MoveToNextLevel();
@@ -83,9 +93,10 @@ public class PlayerController : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Portal"))
         {
+            baseController.PlusMinerals(minerals);
             collision.GetComponent<LevelObject>().MoveToNextLevel();
         }
-        if (collision.gameObject.CompareTag("Monster"))
+        if (collision.gameObject.CompareTag("Ghost") || collision.gameObject.CompareTag("Crazy"))
         {
             for (int i = 0; i < 4; i++) minerals[i] = 0;
             collision.GetComponent<LevelObject>().MoveToNextLevel();

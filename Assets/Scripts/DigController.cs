@@ -8,6 +8,7 @@ public class DigController : MonoBehaviour
     [SerializeField] CaveController cave;
     [SerializeField] UIController mineralUI;
     [SerializeField] PlayerController player;
+    [SerializeField] AudioSource miningAudio;
     [SerializeField] int width;
     [SerializeField] int height;
 
@@ -24,6 +25,7 @@ public class DigController : MonoBehaviour
         cave = GameObject.FindAnyObjectByType<CaveController>();
         mineralUI = GameObject.FindAnyObjectByType<UIController>();
         player = GameObject.FindAnyObjectByType<PlayerController>();
+        miningAudio = GetComponent<AudioSource>();
         width = cave.GetWidth();
         height = cave.GetHeight();
     }
@@ -36,6 +38,7 @@ public class DigController : MonoBehaviour
         player.SetPlayerSpeed(15.0f);
         if (Input.GetMouseButton(0) && focusingMineral != -1 && cave.GetMineralHP(focusingMineral) > 0 && CheckForBetweenObject())
         {
+            if (!miningAudio.isPlaying) miningAudio.Play();
             player.SetPlayerSpeed(5.0f);
             float mineralHP = cave.GetMineralHP(focusingMineral);
             mineralHP -= Time.deltaTime;
@@ -49,6 +52,7 @@ public class DigController : MonoBehaviour
             cave.SetMineralHP(focusingMineral, mineralHP);
             mineralUI.SetMineralHP(focusingMineralMax, mineralHP);
         }
+        else miningAudio.Stop();
     }
 
     private bool CheckForBetweenObject()
@@ -83,7 +87,7 @@ public class DigController : MonoBehaviour
         if (collision.CompareTag("Minerals"))
         {
             Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            int mineralNumber = cave.GetMineralNumber((int)(mousePosition.x + width / 2), (int)(mousePosition.y + height / 2));
+            int mineralNumber = cave.GetMineralNumber((int)(mousePosition.x + width / 2.0f), (int)(mousePosition.y + height / 2.0f));
             mineralUI.SetUIActive(true);
             focusingMineral = mineralNumber;
             switch (cave.GetMineral((int)(mousePosition.x + width / 2), (int)(mousePosition.y + height / 2)))
