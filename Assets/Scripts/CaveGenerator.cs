@@ -19,19 +19,57 @@ public class CaveGenerator : MonoBehaviour
     [SerializeField] private int expandWallNum;
     [SerializeField] private int portalDistance;
     [SerializeField] private int mapPadding;
+    [SerializeField] private int[] mineralSpotsMid;
+    [SerializeField] private int[] mineralValuesMid;
 
     [SerializeField] private Tile wallTile;
     [SerializeField] private Tile roadTile;
     [SerializeField] private Tile portalTile;
+    [SerializeField] private Tile coalTile;
+    [SerializeField] private Tile ironTile;
+    [SerializeField] private Tile goldTile;
+    [SerializeField] private Tile diamondTile;
     [SerializeField] private Tilemap wallTilemap;
     [SerializeField] private Tilemap roadTilemap;
     [SerializeField] private Tilemap portalTilemap;
+    [SerializeField] private Tilemap mineralTilemap;
 
     private int[,] map;
     private const int ROAD = 0;
     private const int WALL = 1;
     private const int PORTAL = 2;
+    private const int COAL = 3;
+    private const int IRON = 4;
+    private const int GOLD = 5;
+    private const int DIAMOND = 6;
+
     private System.Random pseudoRandom;
+
+    public class pair
+    {
+        public int first { get; set; }
+        public int second { get; set; }
+
+        public pair(int first, int second)
+        {
+            this.first = first;
+            this.second = second;
+        }
+    }
+
+    public class triple
+    {
+        public int first { get; set; }
+        public int second { get; set; }
+        public int third { get; set; }
+
+        public triple(int first, int second, int third)
+        {
+            this.first = first;
+            this.second = second;
+            this.third = third;
+        }
+    }
 
     private void Awake()
     {
@@ -42,8 +80,8 @@ public class CaveGenerator : MonoBehaviour
 
     private void GenerateMap()
     {
+        pair playerPos;
         map = new int[width, height];
-        int[] mineralValues = new int[4];
         do
         {
             MapRandomFill();
@@ -53,19 +91,101 @@ public class CaveGenerator : MonoBehaviour
             for (int i = 0; i < expandWallNum; i++) ExpandMap(WALL);
             for (int i = 0; i < smoothNum; i++) SmoothMap();
         } while (!IsValidMap());
-        GenerateEntrance();
+        
+        playerPos = GenerateEntrance();
         for (int i = 0; i < smoothNum; i++) SmoothMap();
+
+        GenerateMinerals(playerPos);
         FillMap();
     }
-    public class pair
-    {
-        public int first { get; set; }
-        public int second { get; set; }
 
-        public pair(int first, int second)
+    private int[] initMineralSpots()
+    {
+        int[] mineralSpots = new int[4];
+        for (int i = 0; i < 4; i++)
+            mineralSpots[i] = pseudoRandom.Next(mineralSpotsMid[i] - mineralSpotsMid[i] / 4, mineralSpotsMid[i] + mineralSpotsMid[i] / 2);
+        return mineralSpots;
+    }
+
+    private void GenerateMinerals(pair playerPos)
+    {
+        int[,] mover = {
+            {-1, 0 }, {1, 0 },
+            {0, -1 }, {0, 1 }
+        };
+        bool[,] checker = new bool[width, height];
+        int maxDistance = CalcCaveDistance(playerPos);
+        int[] mineralSpots = initMineralSpots();
+        int cnt = 0;
+        Queue<triple> Q = new Queue<triple>();
+        Q.Enqueue(new triple(playerPos.first, playerPos.second, 0));
+        while (Q.Count > 0)
         {
-            this.first = first;
-            this.second = second;
+            triple nowPos = Q.Dequeue();
+            if (nowPos.third > maxDistance)
+            {
+                maxDistance = nowPos.third;
+            }
+            for (int i = 0; i < 4; i++)
+            {
+                int nextX = nowPos.first + mover[i, 0], nextY = nowPos.second + mover[i, 1];
+                if (!(0 <= nextX && nextX < width && 0 <= nextY && nextY < height)) continue;
+                if (map[nextX, nextY] == ROAD && !checker[nextX, nextY])
+                {
+                    checker[nextX, nextY] = true;
+                    Q.Enqueue(new triple(nextX, nextY, nowPos.third + 1));
+                }
+                if (map[nextX, nextY] == WALL && pseudoRandom.Next(0, 50) == 0)
+                {
+                    if (nowPos.third >= maxDistance / 100 && mineralSpotsMid[0] > 0)
+                    {
+                        SpreadMineral(COAL, nextX, nextY);
+                        mineralSpotsMid[0]--;
+                    }
+                    else if (nowPos.third >= maxDistance / 50 && mineralSpotsMid[1] > 0)
+                    {
+                        SpreadMineral(IRON, nextX, nextY);
+                        mineralSpotsMid[1]--;
+                    }
+                    else if (nowPos.third >= maxDistance / 10 && mineralSpotsMid[2] > 0)
+                    {
+                        SpreadMineral(GOLD, nextX, nextY);
+                        mineralSpotsMid[2]--;
+                    }
+                    else if (nowPos.third >= maxDistance / 2 && mineralSpotsMid[3] > 0)
+                    {
+                        SpreadMineral(DIAMOND, nextX, nextY);
+                        mineralSpotsMid[3]--;
+                    }
+
+                }
+            }
+        }
+    }
+
+    private void SpreadMineral(int mineral, int x, int y)
+    {
+        int mineralCnt = pseudoRandom.Next(mineralValuesMid[mineral - COAL] - mineralValuesMid[mineral - COAL] / 4, 
+            mineralValuesMid[mineral - COAL] + mineralValuesMid[mineral - COAL] / 4);
+        int[,] mover = {
+            {-1, 0 }, {1, 0 },
+            {0, -1 }, {0, 1 }
+        };
+        Queue<pair> Q = new Queue<pair>();
+        Q.Enqueue(new pair(x, y));
+        for (; Q.Count > 0 && mineralCnt > 0; mineralCnt--)
+        {
+            pair nowPos = Q.Dequeue();
+            for (int i = 0; i < 4; i++)
+            {
+                int nextX = nowPos.first + mover[i, 0], nextY = nowPos.second + mover[i, 1];
+                if (!(0 <= nextX && nextX < width && 0 <= nextY && nextY < height)) continue;
+                if (map[nextX, nextY] == WALL)
+                {
+                    map[nextX, nextY] = mineral;
+                    Q.Enqueue(new pair(nextX, nextY));
+                }
+            }
         }
     }
     private bool IsValidMap()
@@ -93,6 +213,7 @@ public class CaveGenerator : MonoBehaviour
                         for (int i = 0; i < 4; i++)
                         {
                             int nextX = nowPos.first + mover[i, 0], nextY = nowPos.second + mover[i, 1];
+                            if (!(0 <= nextX && nextX < width && 0 <= nextY && nextY < height)) continue;
                             if (map[nextX, nextY] == ROAD && checker[nextX, nextY] == 0)
                             {
                                 checker[nextX, nextY] = nowValue;
@@ -125,7 +246,7 @@ public class CaveGenerator : MonoBehaviour
         }
         return false;
     }
-    private void GenerateEntrance()
+    private pair GenerateEntrance()
     {
         // 차후 4 방면 중 한 곳에서 생성되도록 수정
         GameObject player = GameObject.FindGameObjectWithTag("Player");
@@ -139,9 +260,13 @@ public class CaveGenerator : MonoBehaviour
 
         bool flag = true;
         int x, y;
-        for (x = entranceX, y = entranceY; flag || (y - entranceY) < 20;)
+        for (x = entranceX, y = entranceY; flag || (y - entranceY) < 30;)
         {
+            if (x < 0) x = 0;
+            else if (x >= width) x = width - 1;
+            
             if (map[x, y] == ROAD) flag = false;
+
             for (int i = -portalDistance - 1; i <= portalDistance + 1; i++)
             {
                 if (map[x, y] == PORTAL) break;
@@ -153,6 +278,7 @@ public class CaveGenerator : MonoBehaviour
         Vector3 playerPosition = new Vector3(-width / 2 + entranceX, -height / 2 + (entranceY + 5), 0);
         player.GetComponent<PlayerController>().SetPosition(playerPosition);
         camera.GetComponent<CameraController>().SetPosition(playerPosition);
+        return new pair(entranceX, entranceY);
     }
 
     private void FillMap()
@@ -229,8 +355,7 @@ public class CaveGenerator : MonoBehaviour
             {
                 if (neighbourX >= 0 && neighbourX < width && neighbourY >= 0 && neighbourY < height)
                 { 
-                    if (map[neighbourX, neighbourY] == PORTAL) continue; 
-                    if (neighbourX != gridX || neighbourY != gridY) wallCount += map[neighbourX, neighbourY]; 
+                    if (neighbourX != gridX || neighbourY != gridY) wallCount += ((map[neighbourX, neighbourY] == WALL) ? 1 : 0); 
                 }
                 else wallCount++;
             }
@@ -238,6 +363,36 @@ public class CaveGenerator : MonoBehaviour
         return wallCount;
     }
 
+    private int CalcCaveDistance(pair playerPos)
+    {
+        int[,] mover = {
+            {-1, 0 }, {1, 0 },
+            {0, -1 }, {0, 1 }
+        };
+        bool[,] checker = new bool[width, height];
+        int maxDistance = 0;
+        Queue<triple> Q = new Queue<triple>();
+        Q.Enqueue(new triple(playerPos.first, playerPos.second, 0));
+        while (Q.Count > 0)
+        {
+            triple nowPos = Q.Dequeue();
+            if (nowPos.third > maxDistance)
+            {
+                maxDistance = nowPos.third;
+            }
+            for (int i = 0; i < 4; i++)
+            {
+                int nextX = nowPos.first + mover[i, 0], nextY = nowPos.second + mover[i, 1];
+                if (!(0 <= nextX && nextX < width && 0 <= nextY && nextY < height)) continue;
+                if (map[nextX, nextY] == ROAD && !checker[nextX, nextY])
+                {
+                    checker[nextX, nextY] = true;
+                    Q.Enqueue(new triple(nextX, nextY, nowPos.third + 1));
+                }
+            }
+        }
+        return maxDistance;
+    }
     private void OnDrawTile(int x, int y)
     {
         Vector3Int pos = new Vector3Int(-width / 2 + x, -height / 2 + y, 0);
@@ -253,6 +408,10 @@ public class CaveGenerator : MonoBehaviour
             case ROAD: roadTilemap.SetTile(pos, roadTile); break;
             case WALL: wallTilemap.SetTile(pos, wallTile); break;
             case PORTAL: portalTilemap.SetTile(pos, portalTile); break;
+            case COAL: mineralTilemap.SetTile(pos, coalTile); break;
+            case IRON: mineralTilemap.SetTile(pos, ironTile); break;
+            case GOLD: mineralTilemap.SetTile(pos, goldTile); break;
+            case DIAMOND: mineralTilemap.SetTile(pos, diamondTile); break;
         }
     }
 }
