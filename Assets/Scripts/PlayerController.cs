@@ -8,9 +8,12 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody2D rb;
     private Vector2 movement;
+    private DigController digController;
+    private int[] minerals = new int[4];
 
     private void Start()
     {
+        digController = GameObject.FindAnyObjectByType<DigController>();
         rb = GetComponent<Rigidbody2D>();
         rb.constraints = RigidbodyConstraints2D.FreezeRotation; // Z축 회전 고정
     }
@@ -43,5 +46,15 @@ public class PlayerController : MonoBehaviour
     public void SetPosition(Vector3 pos)
     {
         transform.position = pos;
+    }
+
+    public void PlusMineralValue(int mineral)
+    {
+        minerals[mineral]++;
+    }
+
+    public void SetPlayerSpeed(float speed)
+    {
+        moveSpeed = speed;
     }
 }

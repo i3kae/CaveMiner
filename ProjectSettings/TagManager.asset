@@ -9,6 +9,7 @@ TagManager:
   - Portal
   - PlayerCollider
   - Minerals
+  - Cave
   layers:
   - Default
   - TransparentFX

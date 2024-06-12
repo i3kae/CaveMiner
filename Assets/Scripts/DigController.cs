@@ -1,39 +1,109 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class DigController : MonoBehaviour
 {
-    private Collider2D collider2D;
+    [SerializeField] CaveController cave;
+    [SerializeField] UIController mineralUI;
+    [SerializeField] PlayerController player;
+    [SerializeField] int width;
+    [SerializeField] int height;
 
-    void Start()
+    private int focusingMineral = -1;
+    private float focusingMineralMax;
+
+    private const int COAL = 3;
+    private const int IRON = 4;
+    private const int GOLD = 5;
+    private const int DIAMOND = 6;
+
+    private void Awake()
     {
-        // 게임 오브젝트에 부착된 2D 콜라이더를 가져옵니다.
-        collider2D = GetComponent<Collider2D>();
-
-        // 초기 상태로 콜라이더를 비활성화합니다.
-        if (collider2D != null)
-        {
-            collider2D.enabled = false;
-        }
+        cave = GameObject.FindAnyObjectByType<CaveController>();
+        mineralUI = GameObject.FindAnyObjectByType<UIController>();
+        player = GameObject.FindAnyObjectByType<PlayerController>();
+        width = cave.GetWidth();
+        height = cave.GetHeight();
     }
-
 
     void Update()
     {
-        // 마우스 클릭을 감지합니다.
-        if (Input.GetMouseButtonDown(0))
+        Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        this.transform.position = mousePosition;
+
+        player.SetPlayerSpeed(15.0f);
+        if (Input.GetMouseButton(0) && focusingMineral != -1 && cave.GetMineralHP(focusingMineral) > 0 && CheckForBetweenObject())
         {
-            Debug.Log("Click TEST");
-            collider2D.enabled = true;
-            Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            this.transform.position = mousePosition;
+            player.SetPlayerSpeed(8.0f);
+            float mineralHP = cave.GetMineralHP(focusingMineral);
+            mineralHP -= Time.deltaTime;
+            if (mineralHP <= 0)
+            {
+                mineralHP = 0.0f;
+                int mouseX = (int)(mousePosition.x + width / 2), mouseY = (int)(mousePosition.y + height / 2);
+                player.PlusMineralValue(cave.GetMineral(mouseX, mouseY) - COAL);
+                cave.removeMineral(mouseX, mouseY, focusingMineral);
+            }
+            cave.SetMineralHP(focusingMineral, mineralHP);
+            mineralUI.SetMineralHP(focusingMineralMax, mineralHP);
         }
+    }
+
+    private bool CheckForBetweenObject()
+    {
+        Vector2 positionA = player.transform.position;
+        Vector2 positionB = this.transform.position;
+        Vector2 direction = (positionB - positionA).normalized;
+        float distance = Vector2.Distance(positionA, positionB);
+
+        // Raycast를 사용하여 타일이 있는지 검사
+        RaycastHit2D[] hits = Physics2D.RaycastAll(positionA, direction, distance);
+        foreach (RaycastHit2D hit in hits)
+        {
+            if (hit.collider != null)
+            {
+                if (hit.collider.CompareTag("Player"))
+                {
+                    continue;
+                }
+
+                if (hit.collider.CompareTag("Wall"))
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collider2D.CompareTag("Minerals"))
-            Debug.Log("Mineral TEST!");
+        if (collision.CompareTag("Minerals"))
+        {
+            Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            int mineralNumber = cave.GetMineralNumber((int)(mousePosition.x + width / 2), (int)(mousePosition.y + height / 2));
+            mineralUI.SetUIActive(true);
+            focusingMineral = mineralNumber;
+            switch (cave.GetMineral((int)(mousePosition.x + width / 2), (int)(mousePosition.y + height / 2)))
+            {
+                case COAL: focusingMineralMax = 5.0f; break;
+                case IRON: focusingMineralMax = 8.0f; break;
+                case GOLD: focusingMineralMax = 10.0f; break;
+                case DIAMOND: focusingMineralMax = 30.0f; break;
+            }
+            mineralUI.SetMineralHP(focusingMineralMax, cave.GetMineralHP(mineralNumber));
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Minerals"))
+        {
+            focusingMineral = -1;
+            focusingMineralMax = 0;
+            mineralUI.SetUIActive(false);
+        }
     }
 }

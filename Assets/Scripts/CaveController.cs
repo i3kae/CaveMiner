@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEditor.Search;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using static UnityEngine.RuleTile.TilingRuleOutput;
 
-public class CaveGenerator : MonoBehaviour
+public class CaveController : MonoBehaviour
 {
     [SerializeField] private int width;
     [SerializeField] private int height;
@@ -34,7 +35,9 @@ public class CaveGenerator : MonoBehaviour
     [SerializeField] private Tilemap portalTilemap;
     [SerializeField] private Tilemap mineralTilemap;
 
-    private int[,] map;
+    [SerializeField] private int[,] map;
+    [SerializeField] private int[,] mineralMap;
+    [SerializeField] private float[] mineralHPs;
     private const int ROAD = 0;
     private const int WALL = 1;
     private const int PORTAL = 2;
@@ -82,6 +85,7 @@ public class CaveGenerator : MonoBehaviour
     {
         pair playerPos;
         map = new int[width, height];
+        mineralMap = new int[width, height];
         do
         {
             MapRandomFill();
@@ -102,8 +106,13 @@ public class CaveGenerator : MonoBehaviour
     private int[] initMineralSpots()
     {
         int[] mineralSpots = new int[4];
+        int spotCnt = 0;
         for (int i = 0; i < 4; i++)
+        {
             mineralSpots[i] = pseudoRandom.Next(mineralSpotsMid[i] - mineralSpotsMid[i] / 4, mineralSpotsMid[i] + mineralSpotsMid[i] / 2);
+            spotCnt += mineralSpots[i];
+        }
+        mineralHPs = new float[spotCnt * 2];
         return mineralSpots;
     }
 
@@ -116,7 +125,7 @@ public class CaveGenerator : MonoBehaviour
         bool[,] checker = new bool[width, height];
         int maxDistance = CalcCaveDistance(playerPos);
         int[] mineralSpots = initMineralSpots();
-        int cnt = 0;
+        int mineralNumber = 1;
         Queue<triple> Q = new Queue<triple>();
         Q.Enqueue(new triple(playerPos.first, playerPos.second, 0));
         while (Q.Count > 0)
@@ -139,31 +148,63 @@ public class CaveGenerator : MonoBehaviour
                 {
                     if (nowPos.third >= maxDistance / 100 && mineralSpotsMid[0] > 0 && pseudoRandom.Next(0, 3) == 1)
                     {
-                        SpreadMineral(COAL, nextX, nextY);
+                        SpreadMineral(COAL, nextX, nextY, mineralNumber);
+                        mineralHPs[mineralNumber++] = 5.0f;
                         mineralSpotsMid[0]--;
                     }
                     else if (nowPos.third >= maxDistance / 50 && mineralSpotsMid[1] > 0 && pseudoRandom.Next(0, 4) == 1)
                     {
-                        SpreadMineral(IRON, nextX, nextY);
+                        SpreadMineral(IRON, nextX, nextY, mineralNumber);
+                        mineralHPs[mineralNumber++] = 8.0f;
                         mineralSpotsMid[1]--;
                     }
                     else if (nowPos.third >= maxDistance / 5 && mineralSpotsMid[2] > 0 && pseudoRandom.Next(0, 6) == 1)
                     {
-                        SpreadMineral(GOLD, nextX, nextY);
+                        SpreadMineral(GOLD, nextX, nextY, mineralNumber);
+                        mineralHPs[mineralNumber++] = 10.0f;
                         mineralSpotsMid[2]--;
                     }
                     else if (nowPos.third >= maxDistance / 1.4f && mineralSpotsMid[3] > 0 && pseudoRandom.Next(0, 6) == 1)
                     {
-                        SpreadMineral(DIAMOND, nextX, nextY);
+                        SpreadMineral(DIAMOND, nextX, nextY, mineralNumber);
+                        mineralHPs[mineralNumber++] = 30.0f;
                         mineralSpotsMid[3]--;
                     }
-
                 }
             }
         }
     }
 
-    private void SpreadMineral(int mineral, int x, int y)
+    public void removeMineral(int x, int y, int mineralNumber)
+    {
+        int[,] mover = {
+            {-1, 0 }, {1, 0 },
+            {0, -1 }, {0, 1 }
+        };
+        Queue<pair> Q = new Queue<pair>();
+        Q.Enqueue(new pair(x, y));
+        map[x, y] = ROAD;
+        mineralMap[x, y] = 0;
+        OnDrawTile(x, y);
+        while (Q.Count > 0)
+        {
+            pair nowPos = Q.Dequeue();
+            for (int i = 0; i < 4; i++)
+            {
+                int nextX = nowPos.first + mover[i, 0], nextY = nowPos.second + mover[i, 1];
+                if (!(0 <= nextX && nextX < width && 0 <= nextY && nextY < height)) continue;
+                if (mineralMap[nextX, nextY] == mineralNumber)
+                {
+                    map[nextX, nextY] = ROAD;
+                    mineralMap[nextX, nextY] = 0;
+                    OnDrawTile(nextX, nextY);
+                    Q.Enqueue(new pair(nextX, nextY));
+                }
+            }
+        }
+    }
+
+    private void SpreadMineral(int mineral, int x, int y, int number)
     {
         int mineralCnt = pseudoRandom.Next(mineralValuesMid[mineral - COAL] - mineralValuesMid[mineral - COAL] / 4, 
             mineralValuesMid[mineral - COAL] + mineralValuesMid[mineral - COAL] / 4);
@@ -173,6 +214,8 @@ public class CaveGenerator : MonoBehaviour
         };
         Queue<pair> Q = new Queue<pair>();
         Q.Enqueue(new pair(x, y));
+        map[x, y] = mineral;
+        mineralMap[x, y] = number;
         for (; Q.Count > 0 && mineralCnt > 0; mineralCnt--)
         {
             pair nowPos = Q.Dequeue();
@@ -183,6 +226,7 @@ public class CaveGenerator : MonoBehaviour
                 if (map[nextX, nextY] == WALL)
                 {
                     map[nextX, nextY] = mineral;
+                    mineralMap[nextX, nextY] = number;
                     Q.Enqueue(new pair(nextX, nextY));
                 }
             }
@@ -252,7 +296,7 @@ public class CaveGenerator : MonoBehaviour
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         GameObject camera = GameObject.FindGameObjectWithTag("MainCamera");
         int entranceX, entranceY = 0;
-        entranceX = pseudoRandom.Next(portalDistance + 3, width - portalDistance - 3);
+        entranceX = pseudoRandom.Next(width / 2 - portalDistance, width / 2 + portalDistance);
         for (int i = entranceX - portalDistance; i <= entranceX + portalDistance; i++)
         {
             map[i, entranceY] = PORTAL;
@@ -396,7 +440,7 @@ public class CaveGenerator : MonoBehaviour
     private void OnDrawTile(int x, int y)
     {
         Vector3Int pos = new Vector3Int(-width / 2 + x, -height / 2 + y, 0);
-
+        mineralTilemap.SetTile(pos, null);
         if (!(x >= 0 && x < width && y >= 0 && y < height))
         {
             wallTilemap.SetTile(pos, wallTile);
@@ -413,5 +457,32 @@ public class CaveGenerator : MonoBehaviour
             case GOLD: mineralTilemap.SetTile(pos, goldTile); break;
             case DIAMOND: mineralTilemap.SetTile(pos, diamondTile); break;
         }
+    }
+
+    public float GetMineralHP(int number)
+    {
+        return mineralHPs[number];
+    }
+    public int GetMineralNumber(int x, int y)
+    {
+        return mineralMap[x, y];
+    }
+    public int GetMineral(int x, int y)
+    {
+        return map[x, y];
+    }
+
+    public int GetWidth()
+    {
+        return width;
+    }
+    public int GetHeight()
+    {
+        return height;
+    }
+
+    public void SetMineralHP(int number, float value)
+    {
+        mineralHPs[number] = value;
     }
 }
