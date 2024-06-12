@@ -135,24 +135,24 @@ public class CaveGenerator : MonoBehaviour
                     checker[nextX, nextY] = true;
                     Q.Enqueue(new triple(nextX, nextY, nowPos.third + 1));
                 }
-                if (map[nextX, nextY] == WALL && pseudoRandom.Next(0, 50) == 0)
+                if (map[nextX, nextY] == WALL && pseudoRandom.Next(0, 45) == 0)
                 {
-                    if (nowPos.third >= maxDistance / 100 && mineralSpotsMid[0] > 0)
+                    if (nowPos.third >= maxDistance / 100 && mineralSpotsMid[0] > 0 && pseudoRandom.Next(0, 3) == 1)
                     {
                         SpreadMineral(COAL, nextX, nextY);
                         mineralSpotsMid[0]--;
                     }
-                    else if (nowPos.third >= maxDistance / 50 && mineralSpotsMid[1] > 0)
+                    else if (nowPos.third >= maxDistance / 50 && mineralSpotsMid[1] > 0 && pseudoRandom.Next(0, 4) == 1)
                     {
                         SpreadMineral(IRON, nextX, nextY);
                         mineralSpotsMid[1]--;
                     }
-                    else if (nowPos.third >= maxDistance / 10 && mineralSpotsMid[2] > 0)
+                    else if (nowPos.third >= maxDistance / 5 && mineralSpotsMid[2] > 0 && pseudoRandom.Next(0, 6) == 1)
                     {
                         SpreadMineral(GOLD, nextX, nextY);
                         mineralSpotsMid[2]--;
                     }
-                    else if (nowPos.third >= maxDistance / 2 && mineralSpotsMid[3] > 0)
+                    else if (nowPos.third >= maxDistance / 1.4f && mineralSpotsMid[3] > 0 && pseudoRandom.Next(0, 6) == 1)
                     {
                         SpreadMineral(DIAMOND, nextX, nextY);
                         mineralSpotsMid[3]--;
