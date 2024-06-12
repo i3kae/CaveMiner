@@ -287,6 +287,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 15
+  playerFlashlight: {fileID: 976766495}
+  playerLight: {fileID: 1348062142}
+  digController: {fileID: 0}
+  mineralUI: {fileID: 0}
 --- !u!1 &511646029
 GameObject:
   m_ObjectHideFlags: 0
@@ -891,7 +895,7 @@ MonoBehaviour:
   m_Intensity: 1
   m_LightVolumeIntensity: 1
   m_LightVolumeIntensityEnabled: 0
-  m_ApplyToSortingLayers: 00000000fd5a4db4a3c7193bad1ab16fbb4cffe8
+  m_ApplyToSortingLayers: 00000000fd5a4db4a3c7193bad1ab16fbb4cffe8bd899d35
   m_LightCookieSprite: {fileID: 0}
   m_DeprecatedPointLightCookieSprite: {fileID: 0}
   m_LightOrder: 0
@@ -936,6 +940,57 @@ Transform:
   m_Children: []
   m_Father: {fileID: 484159543}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: -90}
+--- !u!1 &1069420484
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1069420485}
+  - component: {fileID: 1069420486}
+  m_Layer: 0
+  m_Name: Monster Spawn Controller
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1069420485
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1069420484}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 10.656559, y: -17.900133, z: 0.8224798}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1069420486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1069420484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbcaada6bc1c2d047b9a6f5891dce9b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ghost: {fileID: 1549900514030700795, guid: 3a636ab9697881c43b288a6bcb94b5ac, type: 3}
+  crazy: {fileID: 4566321414566699211, guid: 3b276755fa981d44f8e755e7019217f3, type: 3}
+  cave: {fileID: 1947986898}
+  width: 0
+  height: 0
+  spawnInterval: 60
+  elapsedTime: 0
 --- !u!1 &1143266145
 GameObject:
   m_ObjectHideFlags: 0
@@ -1144,7 +1199,7 @@ MonoBehaviour:
   m_Intensity: 0.005
   m_LightVolumeIntensity: 1
   m_LightVolumeIntensityEnabled: 0
-  m_ApplyToSortingLayers: 00000000fd5a4db4a3c7193bad1ab16fbb4cffe8
+  m_ApplyToSortingLayers: 00000000fd5a4db4a3c7193bad1ab16fbb4cffe8bd899d35
   m_LightCookieSprite: {fileID: 0}
   m_DeprecatedPointLightCookieSprite: {fileID: 0}
   m_LightOrder: 0
@@ -1241,7 +1296,7 @@ MonoBehaviour:
   m_Intensity: 1
   m_LightVolumeIntensity: 1
   m_LightVolumeIntensityEnabled: 0
-  m_ApplyToSortingLayers: 00000000fd5a4db4a3c7193bad1ab16fbb4cffe8
+  m_ApplyToSortingLayers: 00000000fd5a4db4a3c7193bad1ab16fbb4cffe8bd899d35
   m_LightCookieSprite: {fileID: 0}
   m_DeprecatedPointLightCookieSprite: {fileID: 0}
   m_LightOrder: 0
@@ -1525,6 +1580,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cave: {fileID: 0}
   mineralUI: {fileID: 0}
+  player: {fileID: 0}
   width: 0
   height: 0
 --- !u!4 &1625193803
@@ -1965,6 +2021,7 @@ MonoBehaviour:
   roadTilemap: {fileID: 511646032}
   portalTilemap: {fileID: 1143266148}
   mineralTilemap: {fileID: 1443316966}
+  mineralHPs: []
 --- !u!1 &2137482419
 GameObject:
   m_ObjectHideFlags: 0
@@ -2059,3 +2116,4 @@ SceneRoots:
   - {fileID: 1180588683}
   - {fileID: 1625193803}
   - {fileID: 925685109}
+  - {fileID: 1069420485}

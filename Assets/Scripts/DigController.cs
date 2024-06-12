@@ -36,7 +36,7 @@ public class DigController : MonoBehaviour
         player.SetPlayerSpeed(15.0f);
         if (Input.GetMouseButton(0) && focusingMineral != -1 && cave.GetMineralHP(focusingMineral) > 0 && CheckForBetweenObject())
         {
-            player.SetPlayerSpeed(8.0f);
+            player.SetPlayerSpeed(5.0f);
             float mineralHP = cave.GetMineralHP(focusingMineral);
             mineralHP -= Time.deltaTime;
             if (mineralHP <= 0)

@@ -10,6 +10,9 @@ TagManager:
   - PlayerCollider
   - Minerals
   - Cave
+  - Monster
+  - PlayerFlashlight
+  - PlayerLight
   layers:
   - Default
   - TransparentFX
@@ -17,7 +20,7 @@ TagManager:
   - Wall
   - Water
   - UI
-  - 
+  - Monster
   - 
   - 
   - 
@@ -58,4 +61,7 @@ TagManager:
     locked: 0
   - name: Player
     uniqueID: 3024968445
+    locked: 0
+  - name: Monster
+    uniqueID: 899516861
     locked: 0
